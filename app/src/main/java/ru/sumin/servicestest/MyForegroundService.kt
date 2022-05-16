@@ -1,6 +1,5 @@
 package ru.sumin.servicestest
 
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
@@ -14,16 +13,21 @@ import kotlinx.coroutines.*
 class MyForegroundService : Service() {
 
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
+    private val notificationManager by lazy {
+        getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+    }
+    private val notificationBuilder by lazy {
+        createNotificationBuilder()
+    }
 
     override fun onCreate() {
         super.onCreate()
         log("onCreate")
-        createNotificationManager()
-        startForeground(NOTIFICATION_ID, createNotification())
+        createNotificationChannel()
+        startForeground(NOTIFICATION_ID, notificationBuilder.build())
     }
 
-    private fun createNotificationManager() {
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+    private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationChannel = NotificationChannel(
                 CHANNEL_ID,
@@ -34,17 +38,22 @@ class MyForegroundService : Service() {
         }
     }
 
-    private fun createNotification() = NotificationCompat.Builder(this, CHANNEL_ID)
+    private fun createNotificationBuilder() = NotificationCompat.Builder(this, CHANNEL_ID)
         .setContentTitle("Foreground title")
         .setContentText("Foreground text")
         .setSmallIcon(R.drawable.ic_launcher_background)
-        .build()
+        .setProgress(100, 0, false)
+        .setOnlyAlertOnce(true) // звуковое уведомление только в первый раз
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         log("onStartCommand")
         coroutineScope.launch {
-            for (i in 0 until 3) {
+            for (i in 0..100 step 5) {
                 delay(1000)
+                val notification = notificationBuilder
+                    .setProgress(100, i, false)
+                    .build()
+                notificationManager.notify(NOTIFICATION_ID, notification)
                 log("Timer $i")
             }
             stopSelf()
