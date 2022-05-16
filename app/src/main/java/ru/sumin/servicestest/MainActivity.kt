@@ -8,8 +8,10 @@ import android.app.job.JobScheduler
 import android.app.job.JobWorkItem
 import android.content.ComponentName
 import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Build
 import android.os.Bundle
+import android.os.IBinder
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -24,6 +26,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private var page = 0
+
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
+            val myBinder = (binder as? MyForegroundService.MyBinder) ?: return
+            val foregroundService = myBinder.getMyForegroundService()
+            foregroundService.onProgressChangedListener = { progress ->
+                binding.progressBar.progress = progress
+            }
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+        }
+
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,5 +86,19 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
+    }
+
+    override fun onStart() {
+        super.onStart()
+        bindService(
+            MyForegroundService.newIntent(this),
+            serviceConnection,
+            0
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        unbindService(serviceConnection)
     }
 }
