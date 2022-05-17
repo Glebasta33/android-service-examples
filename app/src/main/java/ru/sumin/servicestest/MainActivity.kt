@@ -1,23 +1,21 @@
 package ru.sumin.servicestest
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.app.job.JobInfo
 import android.app.job.JobScheduler
 import android.app.job.JobWorkItem
 import android.content.ComponentName
-import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.work.ExistingWorkPolicy
 import androidx.work.WorkManager
 import ru.sumin.servicestest.databinding.ActivityMainBinding
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -38,7 +36,6 @@ class MainActivity : AppCompatActivity() {
 
         override fun onServiceDisconnected(name: ComponentName?) {
         }
-
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -85,7 +82,14 @@ class MainActivity : AppCompatActivity() {
                 MyWorker.makeRequest(page++)
             )
         }
-
+        binding.alarmManager.setOnClickListener {
+            val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
+            val calendar = Calendar.getInstance()
+            calendar.add(Calendar.SECOND, 30)
+            val intent = AlarmReceiver.newIntent(this)
+            val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0)
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+        }
     }
 
     override fun onStart() {
